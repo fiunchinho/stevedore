@@ -2,16 +2,16 @@ package stevedore;
 
 import java.util.Date;
 
-public class Release {
-    private final Version version;
+public class Version {
+    private final String version;
     private final Date createdAt;
 
-    public Release(Version version) {
+    public Version(String version) {
         this.version = version;
         this.createdAt = new Date();
     }
 
-    public Version version() {
+    public String version() {
         return version;
     }
 
@@ -20,14 +20,10 @@ public class Release {
     }
 
     public boolean equalsTo(String version) {
-        return this.version.version() == version;
-    }
-
-    public boolean equalsTo(Version version) {
         return this.version == version;
     }
 
-    public boolean equalsTo(Release release) {
-        return release.version == version;
+    public boolean equalsTo(Version version) {
+        return this.version == version.version;
     }
 }

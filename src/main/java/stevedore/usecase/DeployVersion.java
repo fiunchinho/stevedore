@@ -15,9 +15,9 @@ public class DeployVersion {
     public void deploy(String projectName, String environmentName, String releaseName) throws ReleaseNotFoundException {
         Project project = projectRepository.findOneByName(projectName);
         Environment environment = project.getEnvironment(environmentName);
-        Release release = new Release(releaseName);
 
-        environment.deploy(release);
-        deployer.deploy(project, environment, release);
+        Version version = new Version(releaseName);
+        environment.deploy(version);
+        deployer.deploy(project, environment, version);
     }
 }

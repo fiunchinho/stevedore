@@ -48,10 +48,6 @@ public class ReleaseVersionTest {
         return new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
     }
 
-    private Release getRelease(String version) {
-        return new Release(version);
-    }
-
     private AwsIdentity getIrrelevantAwsIdentity() {
         return new AwsIdentity("access", "secret");
     }

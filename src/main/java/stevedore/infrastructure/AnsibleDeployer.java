@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 
-public class AnsibleDeployer {
+public class AnsibleDeployer implements Deployer{
     public static final String ANSIBLE_PATH = "$HOME/dev/ansible_deploy_docker";
     private final Render render;
 
@@ -17,6 +17,7 @@ public class AnsibleDeployer {
         this.render = render;
     }
 
+    @Override
     public void release(Project project, Environment environment, Release release) {
         render.render(getCombinedConfiguration(project, environment));
         executeAnsiblePlaybook(ANSIBLE_PATH + "/release.yml");
@@ -42,7 +43,8 @@ public class AnsibleDeployer {
 //        }
     }
 
-    public void deploy(Project project, Environment environment, Release release) {
+    @Override
+    public void deploy(Project project, Environment environment, Version version) {
         render.render(getCombinedConfiguration(project, environment));
         executeAnsiblePlaybook(ANSIBLE_PATH + "/deploy.yml");
     }

@@ -2,7 +2,6 @@ package stevedore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.TreeMap;
 
 public class Environment {
@@ -73,8 +72,9 @@ public class Environment {
         return deploys;
     }
 
-    public Release release(Release release) {
-        releases.put(release.version(), release);
+    public Release release(Version version) {
+        Release release = new Release(version);
+        releases.put(version.version(), release);
 
         return release;
     }
@@ -83,8 +83,8 @@ public class Environment {
         return doDeployRelease(releases.pollLastEntry().getValue());
     }
 
-    public Deploy deploy(Release releaseToDeploy) throws ReleaseNotFoundException {
-        Release release = getRelease(releaseToDeploy.version());
+    public Deploy deploy(Version versionToDeploy) throws ReleaseNotFoundException {
+        Release release = getRelease(versionToDeploy.version());
         if (release == null) {
             throw new ReleaseNotFoundException();
         }

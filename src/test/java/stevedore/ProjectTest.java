@@ -2,6 +2,7 @@ package stevedore;
 
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class ProjectTest {
@@ -22,31 +23,35 @@ public class ProjectTest {
     public void itReleasesNewVersions() {
         Environment environment = getEnvironment("production");
         assertEquals(0, environment.releases().size());
-        environment.release(new Release("1.0"));
+        Release release = environment.release(new Version("1.0"));
         assertEquals(1, environment.releases().size());
+        assertThat(release, instanceOf(Release.class));
     }
 
     @Test
     public void itDeploysARelease() throws ReleaseNotFoundException {
         Environment environment = getEnvironment("production");
         assertEquals(0, environment.deploys().size());
-        Release release = new Release("1.0");
+        Version version = new Version("1.0");
 
-        environment.release(release);
-        environment.deploy(release);
+        Release release = environment.release(version);
+        Deploy deploy = environment.deploy(version);
 
         assertEquals(1, environment.deploys().size());
-        assertTrue(environment.currentRelease().equalsTo("1.0"));
+        assertEquals(release, environment.currentRelease());
+        assertThat(deploy, instanceOf(Deploy.class));
     }
 
     @Test
     public void itDeploysLatestRelease() {
         Environment environment = getEnvironment("production");
-        Release release1 = environment.release(new Release("1.0"));
-        Release release2 = environment.release(new Release("2.0"));
+        Version version1 = new Version("1.0");
+        Version version2 = new Version("2.0");
+        Release release1 = environment.release(version1);
+        Release release2 = environment.release(version2);
         Deploy deploy = environment.deploy();
         assertEquals(release2, deploy.release());
-        assertTrue(environment.currentRelease().equalsTo(release2));
+        assertEquals(release2, environment.currentRelease());
     }
 
     private Environment getEnvironment(String name) {

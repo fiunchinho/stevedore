@@ -15,9 +15,8 @@ public class ReleaseVersion {
     public void release(String projectName, String environmentName, String releaseName) {
         Project project = projectRepository.findOneByName(projectName);
         Environment environment = project.getEnvironment(environmentName);
-        Release release = new Release(releaseName);
 
-        environment.release(release);
+        Release release = environment.release(new Version(releaseName));
         deployer.release(project, environment, release);
     }
 }

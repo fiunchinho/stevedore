@@ -3,7 +3,6 @@ package stevedore.usecase;
 import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
-import stevedore.infrastructure.AnsibleDeployer;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import static org.junit.Assert.*;
@@ -15,8 +14,8 @@ import static org.mockito.Mockito.verify;
 public class DeployVersionTest {
     private ProjectRepository projectRepository;
 
-    private Release getRelease(String version) {
-        return new Release(version);
+    private Version getVersion(String version) {
+        return new Version(version);
     }
 
     @Test(expected = ReleaseNotFoundException.class)
@@ -31,7 +30,7 @@ public class DeployVersionTest {
         DeployVersion useCase = new DeployVersion(projectRepository, deployer);
         useCase.deploy(projectName, environmentName, "1.0");
 
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Release.class));
+        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
     }
 
     @Test
@@ -41,15 +40,15 @@ public class DeployVersionTest {
 
         Project project = givenProject(projectName);
         Environment environment = project.getEnvironment(environmentName);
-        environment.release(getRelease("1.0"));
-        environment.release(getRelease("2.0"));
+        environment.release(getVersion("1.0"));
+        environment.release(getVersion("2.0"));
 
         Deployer deployer = mock(Deployer.class);
 
         DeployVersion useCase = new DeployVersion(projectRepository, deployer);
         useCase.deploy(projectName, environmentName, "2.0");
 
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Release.class));
+        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
     }
 
     @Test
@@ -59,8 +58,8 @@ public class DeployVersionTest {
 
         Project project = givenProject(projectName);
         Environment environment = project.getEnvironment(environmentName);
-        environment.release(getRelease("1.0"));
-        environment.release(getRelease("2.0"));
+        environment.release(getVersion("1.0"));
+        environment.release(getVersion("2.0"));
         environment.deploy();
 
         Deployer deployer = mock(Deployer.class);
@@ -70,7 +69,7 @@ public class DeployVersionTest {
 
         assertTrue(environment.currentRelease().equalsTo("1.0"));
 
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Release.class));
+        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
     }
 
     private Project givenProject(String projectName) {
