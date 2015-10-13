@@ -3,7 +3,7 @@ package stevedore;
 import java.util.HashMap;
 
 public interface ProjectRepository {
-    void add(Project project);
+    void save(Project project);
 
     HashMap findAll();
 

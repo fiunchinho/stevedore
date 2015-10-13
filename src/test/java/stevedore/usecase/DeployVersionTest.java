@@ -1,8 +1,10 @@
 package stevedore.usecase;
 
+import net.engio.mbassy.bus.common.IMessageBus;
 import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
+import stevedore.events.ReleaseWasDeployed;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import static org.junit.Assert.*;
@@ -26,8 +28,9 @@ public class DeployVersionTest {
         Project project = givenProject(projectName);
 
         Deployer deployer = mock(Deployer.class);
+        IMessageBus messageBus = mock(IMessageBus.class);
 
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer);
+        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
         useCase.deploy(projectName, environmentName, "1.0");
 
         verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
@@ -44,8 +47,9 @@ public class DeployVersionTest {
         environment.release(getVersion("2.0"));
 
         Deployer deployer = mock(Deployer.class);
+        IMessageBus messageBus = mock(IMessageBus.class);
 
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer);
+        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
         useCase.deploy(projectName, environmentName, "2.0");
 
         verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
@@ -63,13 +67,15 @@ public class DeployVersionTest {
         environment.deploy();
 
         Deployer deployer = mock(Deployer.class);
+        IMessageBus messageBus = mock(IMessageBus.class);
 
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer);
+        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
         useCase.deploy(projectName, environmentName, "1.0");
 
         assertTrue(environment.currentRelease().equalsTo("1.0"));
 
         verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
+        verify(messageBus).publish(any(ReleaseWasDeployed.class));
     }
 
     private Project givenProject(String projectName) {
@@ -80,7 +86,7 @@ public class DeployVersionTest {
                 .withEnvironment(environment)
                 .build();
 
-        projectRepository.add(project);
+        projectRepository.save(project);
 
         return project;
     }

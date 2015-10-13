@@ -3,27 +3,25 @@ package stevedore.usecase;
 import net.engio.mbassy.bus.common.IMessageBus;
 import org.junit.Test;
 import stevedore.*;
-import stevedore.events.VersionWasReleased;
 import stevedore.infrastructure.InMemoryProjectRepository;
+import stevedore.messagebus.Message;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ReleaseVersionTest {
-
+public class RequestDeployTest {
     private ProjectRepository projectRepository = new InMemoryProjectRepository();
 
     @Test
-    public void ItReleasesNewVersion() {
+    public void itDeploysARelease() throws ReleaseNotFoundException {
+        IMessageBus messageBus = mock(IMessageBus.class);
+
         String projectName = "some-project";
         String environmentName = "prod";
         String releaseName = "1.23";
-
-        Environment environment = getEnvironment("prod");
-        Release release = environment.release(new Version(releaseName));
+        Environment environment = getEnvironment(environmentName);
+        environment.release(new Version(releaseName));
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
                 .withName(projectName)
@@ -32,22 +30,14 @@ public class ReleaseVersionTest {
 
         givenProject(project);
 
-        Deployer deployer = mock(Deployer.class);
-        IMessageBus messageBus = mock(IMessageBus.class);
-//        when(deployer.release(project, environmentName, releaseName)).thenReturn(new Release(releaseName));
+        RequestDeploy useCase = new RequestDeploy(projectRepository, messageBus);
+        useCase.deploy(projectName, environmentName, releaseName);
 
-        assertEquals(ReleaseStatus.inProgress(), release.status());
-        ReleaseVersion useCase = new ReleaseVersion(projectRepository, deployer, messageBus);
-        useCase.release(projectName, environmentName, releaseName);
-        assertEquals(ReleaseStatus.ready(), release.status());
-
-        verify(deployer).release(eq(project), eq(project.getEnvironment(environmentName)), any(Release.class));
-        verify(messageBus).publish(any(VersionWasReleased.class));
+        verify(messageBus).publish(any(Message.class));
     }
 
     private Project givenProject(Project project) {
         projectRepository.save(project);
-
         return project;
     }
 

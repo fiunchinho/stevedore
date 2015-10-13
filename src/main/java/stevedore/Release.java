@@ -5,10 +5,12 @@ import java.util.Date;
 public class Release {
     private final Version version;
     private final Date createdAt;
+    private ReleaseStatus.Status status;
 
     public Release(Version version) {
         this.version = version;
         this.createdAt = new Date();
+        this.status = ReleaseStatus.inProgress();
     }
 
     public Version version() {
@@ -17,6 +19,18 @@ public class Release {
 
     public Date createdAt() {
         return createdAt;
+    }
+
+    public ReleaseStatus.Status status() {
+        return status;
+    }
+
+    public void isReady() {
+        this.status = ReleaseStatus.ready();
+    }
+
+    public void isFailed() {
+        this.status = ReleaseStatus.failed();
     }
 
     public boolean equalsTo(String version) {
