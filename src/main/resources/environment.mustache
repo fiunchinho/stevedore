@@ -1,0 +1,19 @@
+---
+
+aws_region: "{{region}}"
+aws_vpc_id: "{{vpcId}}"
+aws_keypair: "{{keypair}}"
+
+aws_access_key: "{{awsIdentity.accessKey}}"
+aws_secret_key: "{{awsIdentity.secretKey}}"
+
+ansible_ssh_private_key_file: "{{private_key_path}}"
+dockerhub_username: "{{dockerhub_username}}"
+dockerhub_password: "{{dockerhub_password}}"
+dockerhub_email: "{{dockerhub_email}}"
+
+# Services
+eureka_url: "eureka"
+elk_url: "elk_url"
+elk_port: 5002
+elasticsearch_host: "https://elastic"
