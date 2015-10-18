@@ -1,10 +1,12 @@
 package stevedore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.TreeMap;
+import stevedore.events.*;
+import stevedore.messagebus.Message;
+
+import java.util.*;
 
 public class Environment {
+    private final String id;
     private String name;
     private Release currentRelease = null;
     private String region;
@@ -12,10 +14,12 @@ public class Environment {
     private String keypair;
     private AwsIdentity awsIdentity;
     private TreeMap<String, Release> releases = new TreeMap<String, Release>();
-    private ArrayList<Deploy> deploys = new ArrayList();
+    private TreeMap<String, Deploy> deploys = new TreeMap();
     private HashMap<String, String> options = new HashMap<>();
+    private List<Message> recordedEvents = new ArrayList<>();
 
     public Environment(String name, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+        this.id = "ASD";
         this.name = name;
         this.region = region;
         this.vpcId = vpcId;
@@ -24,12 +28,12 @@ public class Environment {
     }
 
     public Environment(String name, String region, String vpcId, String keypair, AwsIdentity awsIdentity, HashMap options) {
-        this.name = name;
-        this.region = region;
-        this.vpcId = vpcId;
-        this.keypair = keypair;
-        this.awsIdentity = awsIdentity;
+        this(name, region, vpcId, keypair, awsIdentity);
         this.options = options;
+    }
+
+    public Environment() {
+        this.id = "ASD";
     }
 
     public String name() {
@@ -68,36 +72,90 @@ public class Environment {
         return releases.get(releaseName);
     }
 
-    public ArrayList deploys() {
+    public Deploy getDeploy(String releaseName) {
+        return deploys.get(releaseName);
+    }
+
+    public TreeMap<String, Deploy> deploys() {
         return deploys;
     }
 
-    public Release release(Version version) {
-        Release release = new Release(version);
-        releases.put(version.version(), release);
-
-        return release;
+    public void tagRelease(Version version) {
+        ReleaseWasTagged event = new ReleaseWasTagged(this.id, version.version());
+        apply(event);
+        recordedEvents.add(event);
     }
 
-    public Deploy deploy() {
-        return doDeployRelease(releases.pollLastEntry().getValue());
+    public void release(Version version) {
+        ReleaseWasPushed event = new ReleaseWasPushed(this.id, version.version());
+        apply(event);
+        recordedEvents.add(event);
     }
 
-    public Deploy deploy(Version versionToDeploy) throws ReleaseNotFoundException {
-        Release release = getRelease(versionToDeploy.version());
+    public void startDeploy() {
+        if (releases.isEmpty()) {
+            throw new ReleaseNotFoundException();
+        }
+
+        startDeploy(releases.lastEntry().getValue().version());
+    }
+
+    public void startDeploy(Version versionToDeploy) throws ReleaseNotFoundException {
+        DeployWasStarted event = new DeployWasStarted(this.id, versionToDeploy.version());
+        apply(event);
+        recordedEvents.add(event);
+    }
+
+    public void deploy(Version versionToDeploy) {
+        DeployWasMade event = new DeployWasMade(this.id, versionToDeploy.version());
+        apply(event);
+        recordedEvents.add(event);
+    }
+
+    public void deploy() {
+        if (deploys.isEmpty()) {
+            throw new DeployNotFoundException();
+        }
+
+        deploy(deploys.lastEntry().getValue().release().version());
+    }
+
+    public void apply(Message event) {
+        apply(event);
+    }
+
+    public void apply(DeployWasMade event) {
+        Deploy deploy = findDeploy(event.version)
+                .orElseThrow(() -> new DeployNotFoundException());
+        currentRelease = deploy.release();
+        deploy.setStatus(DeployStatus.Status.SUCCESSFUL);
+    }
+
+    public void apply(DeployWasStarted event) {
+        Release release = getRelease(event.version);
         if (release == null) {
             throw new ReleaseNotFoundException();
         }
 
-        return doDeployRelease(release);
+        deploys.put(event.version, new Deploy(release));
     }
 
-    private Deploy doDeployRelease(Release release) {
-        Deploy deploy = new Deploy(release);
-        deploys.add(deploy);
-        currentRelease = release;
+    public void apply(ReleaseWasTagged event) {
+        releases.put(event.version, new Release(new Version(event.version)));
+    }
 
-        return deploy;
+    public void apply(ReleaseWasPushed event) {
+        Release release = findRelease(new Version(event.version))
+                .orElseThrow(() -> new ReleaseNotFoundException());
+        release.setStatus(ReleaseStatus.ready());
+    }
+
+    private Optional<Release> findRelease(Version version) {
+        return Optional.ofNullable(releases.get(version.version()));
+    }
+
+    private Optional<Deploy> findDeploy(String version) {
+        return Optional.ofNullable(deploys.get(version));
     }
 
     public HashMap<String, Object> toHashMap() {
@@ -110,5 +168,9 @@ public class Environment {
         options.entrySet().forEach(option -> environment.put(option.getKey(), option.getValue()));
 
         return environment;
+    }
+
+    public List<Message> recordedEvents() {
+        return recordedEvents;
     }
 }

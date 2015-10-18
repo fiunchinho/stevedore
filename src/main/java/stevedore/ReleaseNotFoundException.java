@@ -1,4 +1,4 @@
 package stevedore;
 
-public class ReleaseNotFoundException extends Throwable {
+public class ReleaseNotFoundException extends RuntimeException {
 }

@@ -25,12 +25,19 @@ public class Release {
         return status;
     }
 
-    public void isReady() {
-        this.status = ReleaseStatus.ready();
+    public void setStatus(ReleaseStatus.Status status) {
+        this.status = status;
     }
 
     public void isFailed() {
         this.status = ReleaseStatus.failed();
+    }
+
+    @Override
+    public String toString() {
+        return "Release{" +
+                "version=" + version +
+                '}';
     }
 
     public boolean equalsTo(String version) {

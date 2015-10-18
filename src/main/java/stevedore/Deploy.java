@@ -25,11 +25,7 @@ public class Deploy {
         return status;
     }
 
-    public void isSuccessful() {
-        this.status = DeployStatus.successful();
-    }
-
-    public void isFailed() {
-        this.status = DeployStatus.failed();
+    public void setStatus(DeployStatus.Status status) {
+        this.status = status;
     }
 }

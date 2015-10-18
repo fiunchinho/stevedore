@@ -5,7 +5,5 @@ import java.util.HashMap;
 public interface ProjectRepository {
     void save(Project project);
 
-    HashMap findAll();
-
-    Project findOneByName(String projectName);
+    Project load(String projectName);
 }

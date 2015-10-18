@@ -4,6 +4,14 @@ import java.util.Date;
 
 public class Version {
     private final String version;
+
+    @Override
+    public String toString() {
+        return "Version{" +
+                "version='" + version + '\'' +
+                '}';
+    }
+
     private final Date createdAt;
 
     public Version(String version) {

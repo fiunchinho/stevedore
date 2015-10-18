@@ -14,12 +14,7 @@ public class InMemoryProjectRepository implements ProjectRepository {
     }
 
     @Override
-    public HashMap findAll() {
-        return projects;
-    }
-
-    @Override
-    public Project findOneByName(String projectName) {
+    public Project load(String projectName) {
         return projects.get(projectName);
     }
 

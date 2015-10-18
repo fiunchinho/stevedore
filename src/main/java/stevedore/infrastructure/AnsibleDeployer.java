@@ -46,7 +46,7 @@ public class AnsibleDeployer implements Deployer{
     @Override
     public void deploy(Project project, Environment environment, Version version) {
         render.render(getCombinedConfiguration(project, environment));
-        executeAnsiblePlaybook(ANSIBLE_PATH + "/deploy.yml");
+        executeAnsiblePlaybook(ANSIBLE_PATH + "/startDeploy.yml");
     }
 
     private HashMap getCombinedConfiguration(Project project, Environment environment) {

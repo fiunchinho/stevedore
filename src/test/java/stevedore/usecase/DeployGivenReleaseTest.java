@@ -4,55 +4,70 @@ import net.engio.mbassy.bus.common.IMessageBus;
 import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
-import stevedore.events.ReleaseWasDeployed;
+import stevedore.events.DeployWasMade;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class DeployVersionTest {
+public class DeployGivenReleaseTest {
     private ProjectRepository projectRepository;
+    private IMessageBus messageBus = mock(IMessageBus.class);
+
+    private Project project;
+    private Environment environment;
 
     private Version getVersion(String version) {
         return new Version(version);
     }
 
-    @Test(expected = ReleaseNotFoundException.class)
-    public void ItFailsDeployingReleaseThatNotExists() throws ReleaseNotFoundException {
+    @Test(expected = DeployNotFoundException.class)
+    public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException {
         String projectName = "some-project";
         String environmentName = "prod";
 
         Project project = givenProject(projectName);
 
-        Deployer deployer = mock(Deployer.class);
-        IMessageBus messageBus = mock(IMessageBus.class);
-
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
+        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
         useCase.deploy(projectName, environmentName, "1.0");
-
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
     }
 
     @Test
-    public void ItDeploysNewRelease() throws ReleaseNotFoundException {
+    public void ItDeploysSpecificRelease() throws DeployNotFoundException {
         String projectName = "some-project";
         String environmentName = "prod";
 
         Project project = givenProject(projectName);
         Environment environment = project.getEnvironment(environmentName);
+        environment.tagRelease(getVersion("1.0"));
         environment.release(getVersion("1.0"));
+        environment.tagRelease(getVersion("2.0"));
         environment.release(getVersion("2.0"));
+        environment.startDeploy(getVersion("2.0"));
 
-        Deployer deployer = mock(Deployer.class);
-        IMessageBus messageBus = mock(IMessageBus.class);
-
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
+        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
         useCase.deploy(projectName, environmentName, "2.0");
+    }
 
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
+    @Test
+    public void ItDeploysLatestRelease() throws DeployNotFoundException {
+        String projectName = "some-project";
+        String environmentName = "prod";
+
+        Project project = givenProject(projectName);
+        Environment environment = project.getEnvironment(environmentName);
+        environment.tagRelease(getVersion("1.0"));
+        environment.release(getVersion("1.0"));
+        environment.tagRelease(getVersion("2.0"));
+        environment.release(getVersion("2.0"));
+        environment.startDeploy();
+
+        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
+        useCase.deploy(projectName, environmentName, "2.0");
     }
 
     @Test
@@ -62,20 +77,22 @@ public class DeployVersionTest {
 
         Project project = givenProject(projectName);
         Environment environment = project.getEnvironment(environmentName);
+        environment.tagRelease(getVersion("1.0"));
         environment.release(getVersion("1.0"));
+        environment.tagRelease(getVersion("2.0"));
         environment.release(getVersion("2.0"));
-        environment.deploy();
+        environment.startDeploy(getVersion("2.0"));
+        environment.deploy(getVersion("2.0"));
+        environment.startDeploy(getVersion("1.0"));
 
-        Deployer deployer = mock(Deployer.class);
-        IMessageBus messageBus = mock(IMessageBus.class);
+        assertTrue(environment.currentRelease().equalsTo("2.0"));
 
-        DeployVersion useCase = new DeployVersion(projectRepository, deployer, messageBus);
+        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
         useCase.deploy(projectName, environmentName, "1.0");
 
         assertTrue(environment.currentRelease().equalsTo("1.0"));
 
-        verify(deployer).deploy(eq(project), eq(project.getEnvironment(environmentName)), any(Version.class));
-        verify(messageBus).publish(any(ReleaseWasDeployed.class));
+        verify(messageBus, times(8)).publish(any(DeployWasMade.class));
     }
 
     private Project givenProject(String projectName) {
