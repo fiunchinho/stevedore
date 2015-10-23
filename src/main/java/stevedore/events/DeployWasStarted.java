@@ -10,12 +10,12 @@ public class DeployWasStarted implements Message {
 
     private final String environmentId;
     public final String version;
-    private final Date createAt;
+    private final Date createdAt;
 
     public DeployWasStarted(String environmentId, String version) {
         this.environmentId = environmentId;
         this.version = version;
-        this.createAt = new Date();
+        this.createdAt = new Date();
     }
 
     @Override
@@ -25,6 +25,6 @@ public class DeployWasStarted implements Message {
 
     @Override
     public Date getCreatedAt() {
-        return createAt;
+        return createdAt;
     }
 }

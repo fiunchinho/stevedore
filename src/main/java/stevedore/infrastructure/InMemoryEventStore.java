@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class InMemoryEventStore<E> implements EventStore{
+public class InMemoryEventStore implements EventStore{
     private final HashMap<String, ArrayList<Message>> events = new HashMap<>();
 
     public InMemoryEventStore() {

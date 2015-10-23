@@ -1,59 +1,38 @@
 package stevedore.usecase;
 
 import net.engio.mbassy.bus.common.IMessageBus;
+import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
-import stevedore.events.DeployWasStarted;
 import stevedore.infrastructure.InMemoryProjectRepository;
-import stevedore.messagebus.Message;
 
-import static org.hamcrest.CoreMatchers.anything;
+import java.util.UUID;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class PrepareNewDeployTest {
-    private ProjectRepository projectRepository = new InMemoryProjectRepository();
-    private IMessageBus messageBus = mock(IMessageBus.class);
+    private ProjectRepository projectRepository;
+    private IMessageBus messageBus;
 
-    private Project project;
     private Environment environment;
 
     @Test
-    public void itDeploysARelease() throws ReleaseNotFoundException {
-        IMessageBus messageBus = mock(IMessageBus.class);
-
-        String projectName = "some-project";
+    public void itDeploysARelease() throws ReleaseNotFoundException, ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
         String releaseName = "1.23";
-        getEnvironment(environmentName);
-        environment.tagRelease(new Version(releaseName));
-        environment.release(new Version(releaseName));
-        ProjectBuilder buildProject = new ProjectBuilder();
-        Project project = buildProject
-                .withName(projectName)
-                .withEnvironment(environment)
-                .build();
 
-        givenProject(project);
+        givenProject(projectId, environmentName, releaseName);
 
-        whenDeployIsStarted(projectName, environmentName, releaseName);
+        whenDeployIsStarted(projectId, environmentName, releaseName);
 
         thenDeployStatusIs(releaseName, DeployStatus.inProgress());
-
-        assertFalse(environment.recordedEvents().isEmpty());
-        assertEquals(environment.recordedEvents().size(), 3);
-
-//        verify(messageBus, times(3)).publish(anything());
     }
 
-    private void whenDeployIsStarted(String projectName, String environmentName, String releaseName) {
+    private void whenDeployIsStarted(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
         PrepareNewDeploy useCase = new PrepareNewDeploy(projectRepository, messageBus);
-        useCase.deploy(projectName, environmentName, releaseName);
+        useCase.deploy(projectId.toString(), environmentName, releaseName);
     }
 
     private void thenDeployStatusIs(String releaseName, DeployStatus.Status status) {
@@ -61,14 +40,29 @@ public class PrepareNewDeployTest {
         assertEquals(status, deploy.status());
     }
 
-    private Project givenProject(Project project) {
+    private void givenProject(UUID projectId, String environmentName, String releaseName) {
+        givenEnvironment(projectId, environmentName, new Version(releaseName));
+        ProjectBuilder buildProject = new ProjectBuilder();
+        Project project = buildProject
+                .withId(projectId)
+                .withEnvironment(environment)
+                .build();
+
         projectRepository.save(project);
-        return project;
     }
 
-    private Environment getEnvironment(String name) {
-        environment = new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+    private Environment givenEnvironment(UUID projectId, String name, Version version) {
+        environment = Environment.create(projectId.toString(), name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+        environment.tagRelease(version);
+        environment.release(version);
+
         return environment;
+    }
+
+    @Before
+    public void setUp() {
+        projectRepository = new InMemoryProjectRepository();
+        messageBus = mock(IMessageBus.class);
     }
 
     private AwsIdentity getIrrelevantAwsIdentity() {

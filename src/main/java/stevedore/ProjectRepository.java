@@ -1,9 +1,9 @@
 package stevedore;
 
-import java.util.HashMap;
+import java.util.Optional;
 
 public interface ProjectRepository {
     void save(Project project);
 
-    Project load(String projectName);
+    Optional<Project> load(String projectId);
 }

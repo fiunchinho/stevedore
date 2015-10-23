@@ -1,60 +1,61 @@
 package stevedore.usecase;
 
 import net.engio.mbassy.bus.common.IMessageBus;
+import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
 import stevedore.events.ReleaseWasPushed;
+import stevedore.events.ReleaseWasTagged;
 import stevedore.infrastructure.InMemoryProjectRepository;
+
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.isA;
+import static org.mockito.Mockito.*;
 
 public class PushNewReleaseTest {
 
-    private ProjectRepository projectRepository = new InMemoryProjectRepository();
-    private IMessageBus messageBus = mock(IMessageBus.class);
+    private ProjectRepository projectRepository;
+    private IMessageBus messageBus;
 
-    private Project project;
     private Environment environment;
 
     @Test
-    public void ItReleasesNewVersion() {
-        String projectName = "some-project";
+    public void ItReleasesNewVersion() throws ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
         String releaseName = "1.23";
 
-        getEnvironment("prod");
-        environment.tagRelease(new Version(releaseName));
+        givenProject(projectId, environmentName, releaseName);
+
+        whenReleaseIsPushedTo(projectId, environmentName, releaseName);
+
+        thenReleaseStatusIs(releaseName, ReleaseStatus.ready());
+        thenEventsArePublished();
+    }
+
+    private void givenProject(UUID projectId, String environmentName, String releaseName) {
+        givenEnvironment(projectId, environmentName, new Version(releaseName));
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
-                .withName(projectName)
+                .withId(projectId)
                 .withEnvironment(environment)
                 .build();
 
-        givenProject(project);
-        whenReleaseIsPushedTo(projectName, environmentName, releaseName);
-
-        Release release = environment.getRelease(releaseName);
-        assertEquals(ReleaseStatus.ready(), release.status());
-
-        thenReleaseStatusIs(releaseName, ReleaseStatus.ready());
-
-        verify(messageBus, times(2)).publish(any(ReleaseWasPushed.class));
-    }
-
-    private Project givenProject(Project project) {
         projectRepository.save(project);
-        this.project = project;
-
-        return project;
     }
 
-    private void whenReleaseIsPushedTo(String projectName, String environmentName, String releaseName) {
+    private Environment givenEnvironment(UUID projectId, String name, Version version) {
+        environment = Environment.create(projectId.toString(), name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+        environment.tagRelease(version);
+        return environment;
+    }
+
+    private void whenReleaseIsPushedTo(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
         PushNewRelease useCase = new PushNewRelease(projectRepository, messageBus);
-        useCase.release(projectName, environmentName, releaseName);
+        useCase.release(projectId.toString(), environmentName, releaseName);
     }
 
     private void thenReleaseStatusIs(String releaseName, ReleaseStatus.Status status) {
@@ -62,9 +63,14 @@ public class PushNewReleaseTest {
         assertEquals(status, release.status());
     }
 
-    private Environment getEnvironment(String name) {
-        this.environment = new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
-        return environment;
+    private void thenEventsArePublished() {
+        verify(messageBus, atLeastOnce()).publish(any(ReleaseWasPushed.class));
+    }
+
+    @Before
+    public void setUp() {
+        projectRepository = new InMemoryProjectRepository();
+        messageBus = mock(IMessageBus.class);
     }
 
     private AwsIdentity getIrrelevantAwsIdentity() {

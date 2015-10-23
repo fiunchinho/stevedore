@@ -12,15 +12,14 @@ public class ProjectTest {
         Project project = buildProject.withName("Some-Project").build();
         assertEquals(0, project.getEnvironments().size());
 
-        Environment environment = getEnvironment("production");
-        project.addEnvironment(environment);
+        String environmentName = "production";
+        String region = "eu-west-1";
+        project.addEnvironment(environmentName, region, "vpc-123abc", "keys", getIrrelevantAwsIdentity());
 
         assertEquals(1, project.getEnvironments().size());
-        assertEquals(environment, project.getEnvironment("production"));
-    }
-
-    private Environment getEnvironment(String name) {
-        return new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+        Environment environment = project.getEnvironment(environmentName);
+        assertEquals(environment.name(), environmentName);
+        assertEquals(environment.region(), region);
     }
 
     private AwsIdentity getIrrelevantAwsIdentity() {

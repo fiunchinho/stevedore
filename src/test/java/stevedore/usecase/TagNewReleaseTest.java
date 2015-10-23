@@ -1,11 +1,14 @@
 package stevedore.usecase;
 
 import net.engio.mbassy.bus.common.IMessageBus;
+import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
 import stevedore.events.ReleaseWasTagged;
 import stevedore.infrastructure.InMemoryProjectRepository;
 import stevedore.messagebus.Message;
+
+import java.util.UUID;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -15,39 +18,46 @@ import static org.mockito.Mockito.verify;
 
 public class TagNewReleaseTest {
 
-    private ProjectRepository projectRepository = new InMemoryProjectRepository();
+    private ProjectRepository projectRepository;
+    private IMessageBus messageBus;
 
     @Test
-    public void ItReleasesNewVersion() {
-        String projectName = "some-project";
+    public void ItReleasesNewVersion() throws ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
         String releaseName = "1.23";
 
-        givenProject(projectName);
+        givenProject(projectId);
+        whenTaggingANewRelease(projectId, environmentName, releaseName);
+        thenEventsArePublished();
+    }
 
-        IMessageBus messageBus = mock(IMessageBus.class);
-
+    private void whenTaggingANewRelease(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
         TagNewRelease useCase = new TagNewRelease(projectRepository, messageBus);
-        useCase.release(projectName, environmentName, releaseName);
+        useCase.release(projectId.toString(), environmentName, releaseName);
+    }
 
+    private void thenEventsArePublished() {
         verify(messageBus).publish(isA(ReleaseWasTagged.class));
     }
 
-    private Project givenProject(String projectName) {
-        Environment environment = getEnvironment("prod");
+    @Before
+    public void setUp() {
+        projectRepository = new InMemoryProjectRepository();
+        messageBus = mock(IMessageBus.class);
+    }
+
+    private Project givenProject(UUID projectId) {
+        Environment environment = Environment.create(projectId.toString(), "prod", "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
-                .withName(projectName)
+                .withId(projectId)
                 .withEnvironment(environment)
                 .build();
 
         projectRepository.save(project);
 
         return project;
-    }
-
-    private Environment getEnvironment(String name) {
-        return new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
     }
 
     private AwsIdentity getIrrelevantAwsIdentity() {

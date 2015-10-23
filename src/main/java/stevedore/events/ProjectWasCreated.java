@@ -5,23 +5,23 @@ import stevedore.messagebus.Message;
 import java.util.Date;
 
 public class ProjectWasCreated implements Message {
-    private final String id;
+    private final String projectId;
     public final String repository;
-    private final Date createAt;
+    private final Date createdAt;
 
     public ProjectWasCreated(String id, String repository) {
-        this.id = id;
+        this.projectId = id;
         this.repository = repository;
-        this.createAt = new Date();
+        this.createdAt = new Date();
     }
 
     @Override
     public String getId() {
-        return id;
+        return projectId;
     }
 
     @Override
     public Date getCreatedAt() {
-        return createAt;
+        return createdAt;
     }
 }

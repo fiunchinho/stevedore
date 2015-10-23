@@ -7,18 +7,17 @@ import stevedore.*;
 import stevedore.events.DeployWasMade;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
+import java.util.UUID;
+
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class DeployGivenReleaseTest {
     private ProjectRepository projectRepository;
-    private IMessageBus messageBus = mock(IMessageBus.class);
+    private IMessageBus messageBus;
 
-    private Project project;
     private Environment environment;
 
     private Version getVersion(String version) {
@@ -26,95 +25,123 @@ public class DeployGivenReleaseTest {
     }
 
     @Test(expected = DeployNotFoundException.class)
-    public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException {
-        String projectName = "some-project";
+    public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException, ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
-        Project project = givenProject(projectName);
+        givenEnvironment(projectId, environmentName);
+        givenProject(projectId);
 
-        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
-        useCase.deploy(projectName, environmentName, "1.0");
+        whenDeploying(projectId, environmentName, "1.0");
     }
 
     @Test
-    public void ItDeploysSpecificRelease() throws DeployNotFoundException {
-        String projectName = "some-project";
+    public void ItDeploysSpecificRelease() throws DeployNotFoundException, ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
-        Project project = givenProject(projectName);
-        Environment environment = project.getEnvironment(environmentName);
-        environment.tagRelease(getVersion("1.0"));
-        environment.release(getVersion("1.0"));
-        environment.tagRelease(getVersion("2.0"));
-        environment.release(getVersion("2.0"));
-        environment.startDeploy(getVersion("2.0"));
+        givenEnvironment(projectId, environmentName);
+        givenProject(projectId);
 
-        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
-        useCase.deploy(projectName, environmentName, "2.0");
+        whenReleaseIsTagged(getVersion("1.0"));
+        whenReleaseIsPushed(getVersion("1.0"));
+
+        whenReleaseIsTagged(getVersion("2.0"));
+        whenReleaseIsPushed(getVersion("2.0"));
+
+        whenDeployIsStarted(getVersion("2.0"));
+
+        whenDeploying(projectId, environmentName, "2.0");
     }
 
     @Test
-    public void ItDeploysLatestRelease() throws DeployNotFoundException {
-        String projectName = "some-project";
+    public void ItDeploysLatestRelease() throws DeployNotFoundException, ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
-        Project project = givenProject(projectName);
-        Environment environment = project.getEnvironment(environmentName);
-        environment.tagRelease(getVersion("1.0"));
-        environment.release(getVersion("1.0"));
-        environment.tagRelease(getVersion("2.0"));
-        environment.release(getVersion("2.0"));
+        givenEnvironment(projectId, environmentName);
+        givenProject(projectId);
+
+        whenReleaseIsTagged(getVersion("1.0"));
+        whenReleaseIsPushed(getVersion("1.0"));
+        whenReleaseIsTagged(getVersion("2.0"));
+        whenReleaseIsPushed(getVersion("2.0"));
         environment.startDeploy();
 
-        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
-        useCase.deploy(projectName, environmentName, "2.0");
+        whenDeploying(projectId, environmentName, "2.0");
     }
 
     @Test
-    public void ItRollsBackToPreviousRelease() throws ReleaseNotFoundException {
-        String projectName = "some-project";
+    public void ItRollsBackToPreviousRelease() throws ReleaseNotFoundException, ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
-        Project project = givenProject(projectName);
-        Environment environment = project.getEnvironment(environmentName);
-        environment.tagRelease(getVersion("1.0"));
-        environment.release(getVersion("1.0"));
-        environment.tagRelease(getVersion("2.0"));
-        environment.release(getVersion("2.0"));
-        environment.startDeploy(getVersion("2.0"));
+        givenEnvironment(projectId, environmentName);
+        givenProject(projectId);
+
+        whenReleaseIsTagged(getVersion("1.0"));
+        whenReleaseIsPushed(getVersion("1.0"));
+        whenReleaseIsTagged(getVersion("2.0"));
+        whenReleaseIsPushed(getVersion("2.0"));
+        whenDeployIsStarted(getVersion("2.0"));
         environment.deploy(getVersion("2.0"));
-        environment.startDeploy(getVersion("1.0"));
+        whenDeployIsStarted(getVersion("1.0"));
 
         assertTrue(environment.currentRelease().equalsTo("2.0"));
 
-        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
-        useCase.deploy(projectName, environmentName, "1.0");
+        whenDeploying(projectId, environmentName, "1.0");
 
         assertTrue(environment.currentRelease().equalsTo("1.0"));
 
-        verify(messageBus, times(8)).publish(any(DeployWasMade.class));
+        verify(messageBus, atLeastOnce()).publish(any(DeployWasMade.class));
     }
 
-    private Project givenProject(String projectName) {
-        Environment environment = getEnvironment("prod");
+    @Test(expected = ProjectNotFoundException.class)
+    public void itFailsTryingToDeployNonExistingProject() throws ProjectNotFoundException {
+        UUID projectId = UUID.randomUUID();
+        String environmentName = "prod";
+
+        whenDeploying(projectId, environmentName, "1.0");
+    }
+
+    private void whenReleaseIsTagged(Version version) {
+        environment.tagRelease(version);
+    }
+
+    private void whenReleaseIsPushed(Version version) {
+        environment.tagRelease(version);
+    }
+
+    private void whenDeployIsStarted(Version version) {
+        environment.startDeploy(version);
+    }
+
+    private void whenDeploying(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
+        DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
+        useCase.deploy(projectId.toString(), environmentName, releaseName);
+    }
+
+    @Before
+    public void setUp() {
+        projectRepository = new InMemoryProjectRepository();
+        messageBus = mock(IMessageBus.class);
+        environment = null;
+    }
+
+    private void givenProject(UUID projectId) {
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
-                .withName(projectName)
+                .withId(projectId)
                 .withEnvironment(environment)
                 .build();
 
         projectRepository.save(project);
-
-        return project;
     }
 
-    @Before
-    public void getProjectRepository() {
-        projectRepository = new InMemoryProjectRepository();
-    }
+    private Environment givenEnvironment(UUID projectId, String name) {
+        environment = Environment.create(projectId.toString(), name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
 
-    private Environment getEnvironment(String name) {
-        return new Environment(name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+        return environment;
     }
 
     private AwsIdentity getIrrelevantAwsIdentity() {

@@ -9,12 +9,12 @@ import java.util.Date;
 public class ReleaseWasPushed implements Message {
     private final String environmentId;
     public final String version;
-    private final Date createAt;
+    private final Date createdAt;
 
     public ReleaseWasPushed(String environmentId, String version) {
         this.environmentId = environmentId;
         this.version = version;
-        this.createAt = new Date();
+        this.createdAt = new Date();
     }
 
     @Override
@@ -24,6 +24,6 @@ public class ReleaseWasPushed implements Message {
 
     @Override
     public Date getCreatedAt() {
-        return createAt;
+        return createdAt;
     }
 }

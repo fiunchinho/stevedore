@@ -5,6 +5,7 @@ import stevedore.ProjectRepository;
 import stevedore.messagebus.Message;
 
 import java.util.List;
+import java.util.Optional;
 
 public class InMemoryEventSourcingProjectRepository implements ProjectRepository {
 
@@ -16,16 +17,16 @@ public class InMemoryEventSourcingProjectRepository implements ProjectRepository
 
     @Override
     public void save(Project project) {
-        eventStore.add(project.name(), project.recordedEvents());
+        eventStore.add(project.id(), project.recordedEvents());
     }
 
     @Override
-    public Project load(String projectName) {
-        List<Message> events = eventStore.load(projectName);
+    public Optional<Project> load(String projectId) {
+        List<Message> events = eventStore.load(projectId);
         Project project = new Project();
         events.stream().forEach(event -> project.apply(event));
 
-        return project;
+        return Optional.of(project);
     }
 
 }

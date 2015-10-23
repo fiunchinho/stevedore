@@ -6,7 +6,7 @@ import stevedore.messagebus.Message;
 import java.util.*;
 
 public class Environment {
-    private final String id;
+    private String id;
     private String name;
     private Release currentRelease = null;
     private String region;
@@ -18,22 +18,16 @@ public class Environment {
     private HashMap<String, String> options = new HashMap<>();
     private List<Message> recordedEvents = new ArrayList<>();
 
-    public Environment(String name, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
-        this.id = "ASD";
-        this.name = name;
-        this.region = region;
-        this.vpcId = vpcId;
-        this.keypair = keypair;
-        this.awsIdentity = awsIdentity;
-    }
-
-    public Environment(String name, String region, String vpcId, String keypair, AwsIdentity awsIdentity, HashMap options) {
-        this(name, region, vpcId, keypair, awsIdentity);
-        this.options = options;
-    }
-
     public Environment() {
-        this.id = "ASD";
+    }
+
+    public static Environment create(String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+        Environment environment = new Environment();
+        Message event = new EnvironmentWasCreated(projectId, UUID.randomUUID().toString(), environmentName, region, vpcId, keypair, awsIdentity.accessKey(), awsIdentity.secretKey());
+        environment.apply(event);
+        environment.recordedEvents.add(event);
+
+        return environment;
     }
 
     public String name() {
@@ -121,17 +115,38 @@ public class Environment {
     }
 
     public void apply(Message event) {
-        apply(event);
+        if(event instanceof EnvironmentWasCreated){
+            applyEnvironmentWasCreated((EnvironmentWasCreated) event);
+        } else if(event instanceof ReleaseWasTagged){
+            applyReleaseWasTagged((ReleaseWasTagged) event);
+        } else if(event instanceof ReleaseWasPushed){
+            applyReleaseWasPushed((ReleaseWasPushed) event);
+        } else if(event instanceof DeployWasStarted){
+            applyDeployWasStarted((DeployWasStarted) event);
+        } else if(event instanceof DeployWasMade){
+            applyDeployWasMade((DeployWasMade) event);
+        }
     }
 
-    public void apply(DeployWasMade event) {
-        Deploy deploy = findDeploy(event.version)
-                .orElseThrow(() -> new DeployNotFoundException());
-        currentRelease = deploy.release();
-        deploy.setStatus(DeployStatus.Status.SUCCESSFUL);
+    private void applyEnvironmentWasCreated(EnvironmentWasCreated event) {
+        name = event.environmentName;
+        region = event.region;
+        vpcId = event.vpcId;
+        keypair = event.keypair;
+        awsIdentity = new AwsIdentity(event.accessKey, event.secretKey);
     }
 
-    public void apply(DeployWasStarted event) {
+    private void applyReleaseWasTagged(ReleaseWasTagged event) {
+        releases.put(event.version, new Release(new Version(event.version)));
+    }
+
+    private void applyReleaseWasPushed(ReleaseWasPushed event) {
+        Release release = findRelease(new Version(event.version))
+                .orElseThrow(() -> new ReleaseNotFoundException());
+        release.setStatus(ReleaseStatus.ready());
+    }
+
+    private void applyDeployWasStarted(DeployWasStarted event) {
         Release release = getRelease(event.version);
         if (release == null) {
             throw new ReleaseNotFoundException();
@@ -140,14 +155,11 @@ public class Environment {
         deploys.put(event.version, new Deploy(release));
     }
 
-    public void apply(ReleaseWasTagged event) {
-        releases.put(event.version, new Release(new Version(event.version)));
-    }
-
-    public void apply(ReleaseWasPushed event) {
-        Release release = findRelease(new Version(event.version))
-                .orElseThrow(() -> new ReleaseNotFoundException());
-        release.setStatus(ReleaseStatus.ready());
+    private void applyDeployWasMade(DeployWasMade event) {
+        Deploy deploy = findDeploy(event.version)
+                .orElseThrow(() -> new DeployNotFoundException());
+        currentRelease = deploy.release();
+        deploy.setStatus(DeployStatus.Status.SUCCESSFUL);
     }
 
     private Optional<Release> findRelease(Version version) {
