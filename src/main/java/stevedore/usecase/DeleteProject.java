@@ -2,6 +2,7 @@ package stevedore.usecase;
 
 import net.engio.mbassy.bus.common.IMessageBus;
 import stevedore.Project;
+import stevedore.ProjectNotFoundException;
 import stevedore.ProjectRepository;
 
 public class DeleteProject {
@@ -13,8 +14,13 @@ public class DeleteProject {
         this.messageBus = messageBus;
     }
 
-    public void create(String projectRepository) {
-        Project project = Project.create(projectRepository);
+    public void delete(String projectId) throws ProjectNotFoundException {
+        Project project = projectRepository
+                .load(projectId)
+                .orElseThrow(() -> new ProjectNotFoundException());
+
+        project.delete();
+
         project.recordedEvents().forEach(messageBus::publish);
     }
 }
