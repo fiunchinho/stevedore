@@ -7,16 +7,18 @@ import java.util.*;
 
 public class Environment {
     private String id;
+    private String projectId;
+    private Integer version = 0;
     private String name;
     private Release currentRelease = null;
     private String region;
     private String vpcId;
     private String keypair;
     private AwsIdentity awsIdentity;
-    private TreeMap<String, Release> releases = new TreeMap<String, Release>();
+    private TreeMap<String, Release> releases = new TreeMap();
     private TreeMap<String, Deploy> deploys = new TreeMap();
-    private HashMap<String, String> options = new HashMap<>();
-    private List<Message> recordedEvents = new ArrayList<>();
+    private HashMap<String, String> options = new HashMap();
+    private List<Message> recordedEvents = new ArrayList();
 
     public Environment() {
     }
@@ -126,37 +128,40 @@ public class Environment {
         } else if(event instanceof DeployWasMade){
             applyDeployWasMade((DeployWasMade) event);
         }
+        version++;
     }
 
     private void applyEnvironmentWasCreated(EnvironmentWasCreated event) {
-        name = event.environmentName;
-        region = event.region;
-        vpcId = event.vpcId;
-        keypair = event.keypair;
-        awsIdentity = new AwsIdentity(event.accessKey, event.secretKey);
+        id = event.data().get("environmentId");
+        projectId = event.data().get("projectId");
+        name = event.data().get("environmentName");
+        region = event.data().get("region");
+        vpcId = event.data().get("vpcId");
+        keypair = event.data().get("keypair");
+        awsIdentity = new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey"));
     }
 
     private void applyReleaseWasTagged(ReleaseWasTagged event) {
-        releases.put(event.version, new Release(new Version(event.version)));
+        releases.put(event.data().get("version"), new Release(new Version(event.data().get("version"))));
     }
 
     private void applyReleaseWasPushed(ReleaseWasPushed event) {
-        Release release = findRelease(new Version(event.version))
+        Release release = findRelease(new Version(event.data().get("version")))
                 .orElseThrow(() -> new ReleaseNotFoundException());
         release.setStatus(ReleaseStatus.ready());
     }
 
     private void applyDeployWasStarted(DeployWasStarted event) {
-        Release release = getRelease(event.version);
+        Release release = getRelease(event.data().get("version"));
         if (release == null) {
             throw new ReleaseNotFoundException();
         }
 
-        deploys.put(event.version, new Deploy(release));
+        deploys.put(event.data().get("version"), new Deploy(release));
     }
 
     private void applyDeployWasMade(DeployWasMade event) {
-        Deploy deploy = findDeploy(event.version)
+        Deploy deploy = findDeploy(event.data().get("version"))
                 .orElseThrow(() -> new DeployNotFoundException());
         currentRelease = deploy.release();
         deploy.setStatus(DeployStatus.Status.SUCCESSFUL);
