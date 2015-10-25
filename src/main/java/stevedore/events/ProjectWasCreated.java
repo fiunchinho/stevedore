@@ -3,25 +3,26 @@ package stevedore.events;
 import stevedore.messagebus.Message;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.UUID;
 
-public class ProjectWasCreated implements Message {
-    private final String projectId;
-    public final String repository;
-    private final Date createdAt;
+public class ProjectWasCreated extends Message {
 
-    public ProjectWasCreated(String id, String repository) {
-        this.projectId = id;
-        this.repository = repository;
-        this.createdAt = new Date();
+    public ProjectWasCreated(String projectId, String projectRepository) {
+        eventId = UUID.randomUUID().toString();
+        eventType = ProjectWasCreated.class.toString();
+        data.put("projectId", projectId);
+        data.put("projectName", extractProjectNameFrom(projectRepository));
+        data.put("vendor", extractVendorNameFrom(projectRepository));
+        data.put("repository", projectRepository);
+        createdAt = new Date();
     }
 
-    @Override
-    public String getId() {
-        return projectId;
+    private String extractProjectNameFrom(String repository) {
+        return repository.split("/")[1];
     }
 
-    @Override
-    public Date getCreatedAt() {
-        return createdAt;
+    private String extractVendorNameFrom(String repository) {
+        return repository.split("/")[1];
     }
 }

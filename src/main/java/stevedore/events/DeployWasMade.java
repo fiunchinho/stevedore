@@ -3,25 +3,15 @@ package stevedore.events;
 import stevedore.messagebus.Message;
 
 import java.util.Date;
+import java.util.UUID;
 
-public class DeployWasMade implements Message {
-    private final String environmentId;
-    public final String version;
-    private final Date createdAt;
+public class DeployWasMade extends Message {
 
     public DeployWasMade(String environmentId, String version) {
-        this.environmentId = environmentId;
-        this.version = version;
-        this.createdAt = new Date();
-    }
-
-    @Override
-    public String getId() {
-        return environmentId;
-    }
-
-    @Override
-    public Date getCreatedAt() {
-        return createdAt;
+        eventId = UUID.randomUUID().toString();
+        eventType = DeployWasMade.class.toString();
+        data.put("environmentId", environmentId);
+        data.put("version", version);
+        createdAt = new Date();
     }
 }

@@ -3,37 +3,21 @@ package stevedore.events;
 import stevedore.messagebus.Message;
 
 import java.util.Date;
+import java.util.UUID;
 
-public class EnvironmentWasCreated implements Message {
-    private final String environmentId;
-    public final String projectId;
-    public final String environmentName;
-    public final String region;
-    public final String vpcId;
-    public final String keypair;
-    public final String accessKey;
-    public final String secretKey;
-    private final Date createdAt;
+public class EnvironmentWasCreated extends Message {
 
     public EnvironmentWasCreated(String projectId, String environmentId, String environmentName, String region, String vpcId, String keypair, String accessKey, String secretKey) {
-        this.environmentId = environmentId;
-        this.projectId = projectId;
-        this.environmentName = environmentName;
-        this.region = region;
-        this.vpcId = vpcId;
-        this.keypair = keypair;
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.createdAt = new Date();
-    }
-
-    @Override
-    public String getId() {
-        return projectId;
-    }
-
-    @Override
-    public Date getCreatedAt() {
-        return createdAt;
+        eventId = UUID.randomUUID().toString();
+        eventType = EnvironmentWasCreated.class.toString();
+        data.put("projectId", projectId);
+        data.put("environmentId", environmentId);
+        data.put("environmentName", environmentName);
+        data.put("region", region);
+        data.put("vpcId", vpcId);
+        data.put("keypair", keypair);
+        data.put("accessKey", accessKey);
+        data.put("secretKey", secretKey);
+        createdAt = new Date();
     }
 }
