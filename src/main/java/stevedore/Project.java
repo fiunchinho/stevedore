@@ -5,17 +5,14 @@ import stevedore.events.ProjectWasCreated;
 import stevedore.events.ProjectWasDeleted;
 import stevedore.messagebus.Message;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Project {
     private String id;
     private Integer version = 0;
     private String name;
     private String repository;
-    private HashMap<String, Environment> environments = new HashMap<>();
+    private ArrayList<Environment> environments = new ArrayList();
     private List<Message> recordedEvents = new ArrayList<>();
     private String vendor;
 
@@ -52,7 +49,7 @@ public class Project {
         return repository;
     }
 
-    public HashMap getEnvironments() {
+    public ArrayList getEnvironments() {
         return environments;
     }
 
@@ -63,11 +60,18 @@ public class Project {
     }
 
     public void addEnvironment(Environment environment) {
-        environments.put(environment.name(), environment);
+        environments.add(environment);
+//        environments.put(environment.name(), environment);
     }
 
-    public Environment getEnvironment(String environmentName) {
-        return environments.get(environmentName);
+    public Optional<Environment> getEnvironment(String environmentName) {
+        for (Environment environment : environments) {
+            if (environment.name().equals(environmentName)) {
+                return Optional.of(environment);
+            }
+        }
+
+        return Optional.empty();
     }
 
     public void delete() {
@@ -93,8 +97,10 @@ public class Project {
     }
 
     public void applyEnvironmentWasCreated(EnvironmentWasCreated event) {
-        Environment environment = Environment.create(id, event.data().get("environmentName"), event.data().get("region"), event.data().get("vpcId"), event.data().get("keypair"), new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey")));
-        environments.put(event.data().get("environmentName"), environment);
+//        Environment environment = Environment.create(event.data().get("environmentId"), event.data().get("projectId"), event.data().get("environmentName"), event.data().get("region"), event.data().get("vpcId"), event.data().get("keypair"), new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey")));
+        Environment environment = new Environment(event.data().get("environmentId"), id, event.data().get("environmentName"), event.data().get("region"), event.data().get("vpcId"), event.data().get("keypair"), new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey")));
+        addEnvironment(environment);
+//        environments.put(event.data().get("environmentName"), environment);
     }
 
     public HashMap<String, Object> toHashMap() {
@@ -110,7 +116,7 @@ public class Project {
     }
 
     private String extractVendorNameFrom(String repository) {
-        return repository.split("/")[1];
+        return repository.split("/")[0];
     }
 
     public List<Message> recordedEvents() {

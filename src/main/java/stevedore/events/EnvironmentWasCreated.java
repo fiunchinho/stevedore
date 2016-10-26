@@ -8,7 +8,7 @@ import java.util.UUID;
 public class EnvironmentWasCreated extends Message {
 
     public EnvironmentWasCreated(String projectId, String environmentId, String environmentName, String region, String vpcId, String keypair, String accessKey, String secretKey) {
-        eventId = UUID.randomUUID().toString();
+        eventId = UUID.randomUUID();
         eventType = EnvironmentWasCreated.class.toString();
         data.put("projectId", projectId);
         data.put("environmentId", environmentId);

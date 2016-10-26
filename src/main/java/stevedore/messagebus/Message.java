@@ -2,14 +2,15 @@ package stevedore.messagebus;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 public abstract class Message {
-    protected String eventId;
+    protected UUID eventId;
     protected String eventType;
     protected HashMap<String, String> data = new HashMap<>();
     protected Date createdAt;
 
-    public String getId() {
+    public UUID getId() {
         return eventId;
     }
 

@@ -4,6 +4,7 @@ import net.engio.mbassy.bus.common.IMessageBus;
 import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
+import stevedore.infrastructure.ConnectionException;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import java.util.UUID;
@@ -18,7 +19,7 @@ public class PrepareNewDeployTest {
     private Environment environment;
 
     @Test
-    public void itDeploysARelease() throws ReleaseNotFoundException, ProjectNotFoundException {
+    public void itDeploysARelease() throws ReleaseNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
         String releaseName = "1.23";
@@ -30,7 +31,7 @@ public class PrepareNewDeployTest {
         thenDeployStatusIs(releaseName, DeployStatus.inProgress());
     }
 
-    private void whenDeployIsStarted(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
+    private void whenDeployIsStarted(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         PrepareNewDeploy useCase = new PrepareNewDeploy(projectRepository, messageBus);
         useCase.deploy(projectId.toString(), environmentName, releaseName);
     }

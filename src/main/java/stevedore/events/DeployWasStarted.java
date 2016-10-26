@@ -8,7 +8,7 @@ import java.util.UUID;
 public class DeployWasStarted extends Message {
 
     public DeployWasStarted(String environmentId, String version) {
-        eventId = UUID.randomUUID().toString();
+        eventId = UUID.randomUUID();
         eventType = DeployWasStarted.class.toString();
         data.put("environmentId", environmentId);
         data.put("version", version);

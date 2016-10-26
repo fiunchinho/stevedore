@@ -15,12 +15,22 @@ public class Environment {
     private String vpcId;
     private String keypair;
     private AwsIdentity awsIdentity;
-    private TreeMap<String, Release> releases = new TreeMap();
+    private ArrayList<Release> releases = new ArrayList();
     private TreeMap<String, Deploy> deploys = new TreeMap();
     private HashMap<String, String> options = new HashMap();
     private List<Message> recordedEvents = new ArrayList();
 
     public Environment() {
+    }
+
+    public Environment(String environmentId, String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+        this.id = environmentId;
+        this.projectId = projectId;
+        this.name = environmentName;
+        this.region = region;
+        this.vpcId = vpcId;
+        this.keypair = keypair;
+        this.awsIdentity = awsIdentity;
     }
 
     public static Environment create(String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
@@ -31,6 +41,29 @@ public class Environment {
 
         return environment;
     }
+
+    /**
+     * Idempotent factory method.
+     *
+     * @param environmentId
+     * @param projectId
+     * @param environmentName
+     * @param region
+     * @param vpcId
+     * @param keypair
+     * @param awsIdentity
+     * @return
+     */
+    public static Environment create(String environmentId, String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+        Environment environment = new Environment();
+        Message event = new EnvironmentWasCreated(projectId, environmentId, environmentName, region, vpcId, keypair, awsIdentity.accessKey(), awsIdentity.secretKey());
+        environment.apply(event);
+        environment.recordedEvents.add(event);
+
+        return environment;
+    }
+
+    public String id() { return id; }
 
     public String name() {
         return name;
@@ -60,12 +93,18 @@ public class Environment {
         return currentRelease;
     }
 
-    public TreeMap releases() {
+    public ArrayList<Release> releases() {
         return releases;
     }
 
-    public Release getRelease(String releaseName) {
-        return releases.get(releaseName);
+    public Optional<Release> getRelease(String releaseName) {
+        for (Release release : releases) {
+            if (release.equals(releaseName)) {
+                return Optional.of(release);
+            }
+        }
+
+        return Optional.empty();
     }
 
     public Deploy getDeploy(String releaseName) {
@@ -93,7 +132,7 @@ public class Environment {
             throw new ReleaseNotFoundException();
         }
 
-        startDeploy(releases.lastEntry().getValue().version());
+        startDeploy(releases.get(releases.size() - 1).version());
     }
 
     public void startDeploy(Version versionToDeploy) throws ReleaseNotFoundException {
@@ -142,7 +181,8 @@ public class Environment {
     }
 
     private void applyReleaseWasTagged(ReleaseWasTagged event) {
-        releases.put(event.data().get("version"), new Release(new Version(event.data().get("version"))));
+        releases.add(new Release(new Version(event.data().get("version"))));
+//        releases.put(event.data().get("version"), new Release(new Version(event.data().get("version"))));
     }
 
     private void applyReleaseWasPushed(ReleaseWasPushed event) {
@@ -152,10 +192,8 @@ public class Environment {
     }
 
     private void applyDeployWasStarted(DeployWasStarted event) {
-        Release release = getRelease(event.data().get("version"));
-        if (release == null) {
-            throw new ReleaseNotFoundException();
-        }
+        Release release = getRelease(event.data().get("version"))
+                .orElseThrow(() -> new ReleaseNotFoundException());
 
         deploys.put(event.data().get("version"), new Deploy(release));
     }
@@ -168,7 +206,13 @@ public class Environment {
     }
 
     private Optional<Release> findRelease(Version version) {
-        return Optional.ofNullable(releases.get(version.version()));
+        for (Release release : releases) {
+            if (release.equals(version)) {
+                return Optional.of(release);
+            }
+        }
+
+        return Optional.empty();
     }
 
     private Optional<Deploy> findDeploy(String version) {

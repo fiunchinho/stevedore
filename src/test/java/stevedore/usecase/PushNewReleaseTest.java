@@ -6,6 +6,7 @@ import org.junit.Test;
 import stevedore.*;
 import stevedore.events.ReleaseWasPushed;
 import stevedore.events.ReleaseWasTagged;
+import stevedore.infrastructure.ConnectionException;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class PushNewReleaseTest {
     private Environment environment;
 
     @Test
-    public void ItReleasesNewVersion() throws ProjectNotFoundException {
+    public void ItReleasesNewVersion() throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
         String releaseName = "1.23";
@@ -53,13 +54,13 @@ public class PushNewReleaseTest {
         return environment;
     }
 
-    private void whenReleaseIsPushedTo(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
+    private void whenReleaseIsPushedTo(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         PushNewRelease useCase = new PushNewRelease(projectRepository, messageBus);
         useCase.release(projectId.toString(), environmentName, releaseName);
     }
 
     private void thenReleaseStatusIs(String releaseName, ReleaseStatus.Status status) {
-        Release release = environment.getRelease(releaseName);
+        Release release = environment.getRelease(releaseName).get();
         assertEquals(status, release.status());
     }
 

@@ -1,0 +1,15 @@
+[
+  {
+    "eventId": "1234a1a1-b4a3-4dfe-a01f-ec52c34e16e4",
+    "eventType": "EnvironmentWasCreated",
+    "data": {
+      "projectId": "my-project",
+      "environmentId": "prod",
+      "region": "us-west-1",
+      "vpcId": "someVPC",
+      "keypair": "keys",
+      "accesskey": "accesskey",
+      "secretkey": "secretkey"
+    }
+  }
+]

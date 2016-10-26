@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import stevedore.*;
 import stevedore.events.DeployWasMade;
+import stevedore.infrastructure.ConnectionException;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
 import java.util.UUID;
@@ -25,7 +26,7 @@ public class DeployGivenReleaseTest {
     }
 
     @Test(expected = DeployNotFoundException.class)
-    public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException, ProjectNotFoundException {
+    public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
@@ -36,7 +37,7 @@ public class DeployGivenReleaseTest {
     }
 
     @Test
-    public void ItDeploysSpecificRelease() throws DeployNotFoundException, ProjectNotFoundException {
+    public void ItDeploysSpecificRelease() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
@@ -55,7 +56,7 @@ public class DeployGivenReleaseTest {
     }
 
     @Test
-    public void ItDeploysLatestRelease() throws DeployNotFoundException, ProjectNotFoundException {
+    public void ItDeploysLatestRelease() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
@@ -72,7 +73,7 @@ public class DeployGivenReleaseTest {
     }
 
     @Test
-    public void ItRollsBackToPreviousRelease() throws ReleaseNotFoundException, ProjectNotFoundException {
+    public void ItRollsBackToPreviousRelease() throws ReleaseNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
@@ -87,17 +88,17 @@ public class DeployGivenReleaseTest {
         environment.deploy(getVersion("2.0"));
         whenDeployIsStarted(getVersion("1.0"));
 
-        assertTrue(environment.currentRelease().equalsTo("2.0"));
+        assertTrue(environment.currentRelease().equals("2.0"));
 
         whenDeploying(projectId, environmentName, "1.0");
 
-        assertTrue(environment.currentRelease().equalsTo("1.0"));
+        assertTrue(environment.currentRelease().equals("1.0"));
 
         verify(messageBus, atLeastOnce()).publish(any(DeployWasMade.class));
     }
 
     @Test(expected = ProjectNotFoundException.class)
-    public void itFailsTryingToDeployNonExistingProject() throws ProjectNotFoundException {
+    public void itFailsTryingToDeployNonExistingProject() throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         UUID projectId = UUID.randomUUID();
         String environmentName = "prod";
 
@@ -116,7 +117,7 @@ public class DeployGivenReleaseTest {
         environment.startDeploy(version);
     }
 
-    private void whenDeploying(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException {
+    private void whenDeploying(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
         useCase.deploy(projectId.toString(), environmentName, releaseName);
     }

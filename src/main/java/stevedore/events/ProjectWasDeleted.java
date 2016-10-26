@@ -8,7 +8,7 @@ import java.util.UUID;
 public class ProjectWasDeleted extends Message {
 
     public ProjectWasDeleted(String projectId) {
-        eventId = UUID.randomUUID().toString();
+        eventId = UUID.randomUUID();
         eventType = ProjectWasDeleted.class.toString();
         data.put("projectId", projectId);
         createdAt = new Date();

@@ -15,7 +15,7 @@ public class InMemoryProjectRepository implements ProjectRepository {
     }
 
     @Override
-    public Optional<Project> load(String projectId) {
+    public Optional<Project> load(String projectId) throws ConnectionException{
         return Optional.ofNullable(projects.get(projectId));
     }
 

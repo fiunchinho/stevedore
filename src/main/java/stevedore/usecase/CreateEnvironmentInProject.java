@@ -1,27 +1,28 @@
 package stevedore.usecase;
 
-import net.engio.mbassy.bus.common.IMessageBus;
+import com.google.common.eventbus.EventBus;
 import stevedore.*;
-
-import java.util.Optional;
+import stevedore.infrastructure.ConnectionException;
 
 public class CreateEnvironmentInProject {
     private final ProjectRepository projectRepository;
-    private final IMessageBus messageBus;
+    private final EventBus messageBus;
 
-    public CreateEnvironmentInProject(ProjectRepository projectRepository, IMessageBus messageBus) {
+    public CreateEnvironmentInProject(ProjectRepository projectRepository, EventBus messageBus) {
         this.projectRepository = projectRepository;
         this.messageBus = messageBus;
     }
 
-    public void create(String projectId, String environmentName, String region, String vpcId, String keypair, String accessKey, String secretKey) throws ProjectNotFoundException {
+    public void create(String projectId, String environmentName, String region, String vpcId, String keypair, String accessKey, String secretKey) throws ProjectNotFoundException, ConnectionException {
         Project project = projectRepository
                 .load(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException());
 
         project.addEnvironment(environmentName, region, vpcId, keypair, new AwsIdentity(accessKey, secretKey));
+        projectRepository.save(project);
 
-        project.recordedEvents().forEach(messageBus::publish);
+        project.recordedEvents().forEach(System.out::println);
+        project.recordedEvents().forEach(messageBus::post);
     }
 
 }

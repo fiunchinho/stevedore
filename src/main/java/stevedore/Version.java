@@ -3,16 +3,11 @@ package stevedore;
 import java.util.Date;
 
 public class Version {
-    private final String version;
+    private String version;
+    private Date createdAt;
 
-    @Override
-    public String toString() {
-        return "Version{" +
-                "version='" + version + '\'' +
-                '}';
+    public Version() {
     }
-
-    private final Date createdAt;
 
     public Version(String version) {
         this.version = version;

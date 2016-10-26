@@ -17,7 +17,7 @@ public class ProjectTest {
         project.addEnvironment(environmentName, region, "vpc-123abc", "keys", getIrrelevantAwsIdentity());
 
         assertEquals(1, project.getEnvironments().size());
-        Environment environment = project.getEnvironment(environmentName);
+        Environment environment = project.getEnvironment(environmentName).get();
         assertEquals(environment.name(), environmentName);
         assertEquals(environment.region(), region);
     }

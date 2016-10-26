@@ -7,11 +7,11 @@ import stevedore.messagebus.Message;
 import java.util.List;
 import java.util.Optional;
 
-public class InMemoryEventSourcingProjectRepository implements ProjectRepository {
+public class EventSourcingProjectRepository implements ProjectRepository {
 
     private final EventStore eventStore;
 
-    public InMemoryEventSourcingProjectRepository(EventStore eventStore) {
+    public EventSourcingProjectRepository(EventStore eventStore) {
         this.eventStore = eventStore;
     }
 
@@ -21,7 +21,7 @@ public class InMemoryEventSourcingProjectRepository implements ProjectRepository
     }
 
     @Override
-    public Optional<Project> load(String projectId) {
+    public Optional<Project> load(String projectId) throws ConnectionException {
         List<Message> events = eventStore.load(projectId);
         Project project = new Project();
         events.stream().forEach(event -> project.apply(event));

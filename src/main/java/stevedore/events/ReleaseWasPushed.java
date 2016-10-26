@@ -8,7 +8,7 @@ import java.util.UUID;
 public class ReleaseWasPushed extends Message {
 
     public ReleaseWasPushed(String environmentId, String version) {
-        eventId = UUID.randomUUID().toString();
+        eventId = UUID.randomUUID();
         eventType = ReleaseWasPushed.class.toString();
         data.put("environmentId", environmentId);
         data.put("version", version);

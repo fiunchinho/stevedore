@@ -4,6 +4,7 @@ import net.engio.mbassy.bus.common.IMessageBus;
 import stevedore.Project;
 import stevedore.ProjectNotFoundException;
 import stevedore.ProjectRepository;
+import stevedore.infrastructure.ConnectionException;
 
 public class DeleteProject {
     private final ProjectRepository projectRepository;
@@ -14,7 +15,7 @@ public class DeleteProject {
         this.messageBus = messageBus;
     }
 
-    public void delete(String projectId) throws ProjectNotFoundException {
+    public void delete(String projectId) throws ProjectNotFoundException, ConnectionException {
         Project project = projectRepository
                 .load(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException());

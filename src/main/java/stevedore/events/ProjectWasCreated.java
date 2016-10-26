@@ -9,7 +9,7 @@ import java.util.UUID;
 public class ProjectWasCreated extends Message {
 
     public ProjectWasCreated(String projectId, String projectRepository) {
-        eventId = UUID.randomUUID().toString();
+        eventId = UUID.randomUUID();
         eventType = ProjectWasCreated.class.toString();
         data.put("projectId", projectId);
         data.put("projectName", extractProjectNameFrom(projectRepository));

@@ -6,21 +6,21 @@ import stevedore.messagebus.Message;
 
 import java.util.List;
 
-public class InMemoryEventSourcingEnvironmentRepository implements EnvironmentRepository {
+public class EventSourcingEnvironmentRepository implements EnvironmentRepository {
 
     private final EventStore eventStore;
 
-    public InMemoryEventSourcingEnvironmentRepository(EventStore eventStore) {
+    public EventSourcingEnvironmentRepository(EventStore eventStore) {
         this.eventStore = eventStore;
     }
 
     @Override
     public void save(Environment environment) {
-        eventStore.add(environment.name(), environment.recordedEvents());
+        eventStore.add(environment.id(), environment.recordedEvents());
     }
 
     @Override
-    public Environment load(String environmentName) {
+    public Environment load(String environmentName) throws ConnectionException {
         List<Message> events = eventStore.load(environmentName);
         Environment environment = new Environment();
         events.stream().forEach(event -> environment.apply(event));

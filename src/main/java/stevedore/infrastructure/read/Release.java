@@ -1,14 +1,23 @@
-package stevedore;
+package stevedore.infrastructure.read;
+
+import stevedore.ReleaseStatus;
+import stevedore.Version;
 
 import java.util.Date;
 
 public class Release {
-    private final Version version;
-    private final Date createdAt;
+    private Version version;
+    private Date createdAt;
     private ReleaseStatus.Status status;
 
     public Release(Version version) {
+        System.out.println("CREATING VERSION: " + version.toString());
         this.version = version;
+        this.createdAt = new Date();
+        this.status = ReleaseStatus.inProgress();
+    }
+
+    public Release() {
         this.createdAt = new Date();
         this.status = ReleaseStatus.inProgress();
     }
@@ -33,19 +42,12 @@ public class Release {
         this.status = ReleaseStatus.failed();
     }
 
-    @Override
-    public String toString() {
-        return "Release{" +
-                "version=" + version +
-                '}';
-    }
-
     public boolean equals(String version) {
         return this.version.version() == version;
     }
 
     public boolean equals(Version version) {
-        return this.version.version() == version.version();
+        return this.version == version;
     }
 
     public boolean equals(Release release) {

@@ -1,12 +1,15 @@
 package stevedore;
 
 public class AwsIdentity {
-    private final String accessKey;
-    private final String secretKey;
+    private String accessKey;
+    private String secretKey;
 
     public AwsIdentity(String accessKey, String secretKey) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
+    }
+
+    public AwsIdentity() {
     }
 
     public String accessKey() {
