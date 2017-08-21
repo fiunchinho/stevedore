@@ -1,27 +1,13 @@
 package stevedore;
 
 import java.util.ArrayList;
-import java.util.UUID;
 
 public class ProjectBuilder {
-    private UUID id;
-    private String name = "project";
-    private String vendor = "vendor";
-    private String repository = "vendor/project";
+    private String id;
     private ArrayList<Environment> environments = new ArrayList<>();
 
-    public ProjectBuilder withId(UUID projectId) {
+    public ProjectBuilder withId(String projectId) {
         this.id = projectId;
-        return this;
-    }
-
-    public ProjectBuilder withName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public ProjectBuilder withRepository(String repository) {
-        this.repository = repository;
         return this;
     }
 
@@ -31,9 +17,9 @@ public class ProjectBuilder {
     }
 
     public Project build() {
-        Project project = (id == null)? Project.create(name + "/" + vendor) : Project.create(id, name + "/" + vendor);
+        Project project = Project.create(id);
 
-        environments.forEach(environment -> project.addEnvironment(environment));
+        environments.forEach(project::addEnvironment);
 
         return project;
     }

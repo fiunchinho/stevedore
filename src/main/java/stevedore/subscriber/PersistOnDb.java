@@ -5,7 +5,6 @@ import stevedore.ProjectRepository;
 import stevedore.events.DeployWasMade;
 import stevedore.events.DeployWasStarted;
 import stevedore.events.ReleaseWasPushed;
-import stevedore.events.ReleaseWasTagged;
 
 public class PersistOnDb {
     private final ProjectRepository projectRepository;
@@ -21,11 +20,6 @@ public class PersistOnDb {
 
     @Handler
     public void handle(DeployWasMade message) {
-//        projectRepository.save(message.project);
-    }
-
-    @Handler
-    public void handle(ReleaseWasTagged message) {
 //        projectRepository.save(message.project);
     }
 

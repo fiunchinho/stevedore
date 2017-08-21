@@ -1,11 +1,8 @@
 package stevedore.usecase;
 
 import com.google.common.eventbus.EventBus;
-import net.engio.mbassy.bus.common.IMessageBus;
 import stevedore.*;
 import stevedore.infrastructure.ConnectionException;
-
-import java.util.Optional;
 
 public class TagNewRelease {
     private final ProjectRepository projectRepository;
@@ -19,14 +16,13 @@ public class TagNewRelease {
     public void release(String projectId, String environmentId, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         Project project = projectRepository
                 .load(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException());
+                .orElseThrow(ProjectNotFoundException::new);
 
         Environment environment = project
                 .getEnvironment(environmentId)
-                .orElseThrow(() -> new EnvironmentNotFoundException());
+                .orElseThrow(EnvironmentNotFoundException::new);
 
-        environment.tagRelease(new Version(releaseName));
-
+        environment.release(new Version(releaseName));
         environment.recordedEvents().forEach(messageBus::post);
     }
 }

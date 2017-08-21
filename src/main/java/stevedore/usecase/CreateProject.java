@@ -16,7 +16,6 @@ public class CreateProject {
     public void create(String repositoryName) {
         Project project = Project.create(repositoryName);
         projectRepository.save(project);
-        project.recordedEvents().forEach(System.out::println);
         project.recordedEvents().forEach(messageBus::post);
     }
 }

@@ -7,8 +7,6 @@ import stevedore.*;
 import stevedore.infrastructure.ConnectionException;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
-import java.util.UUID;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -20,7 +18,7 @@ public class PrepareNewDeployTest {
 
     @Test
     public void itDeploysARelease() throws ReleaseNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
         String releaseName = "1.23";
 
@@ -31,9 +29,9 @@ public class PrepareNewDeployTest {
         thenDeployStatusIs(releaseName, DeployStatus.inProgress());
     }
 
-    private void whenDeployIsStarted(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
+    private void whenDeployIsStarted(String projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         PrepareNewDeploy useCase = new PrepareNewDeploy(projectRepository, messageBus);
-        useCase.deploy(projectId.toString(), environmentName, releaseName);
+        useCase.deploy(projectId, environmentName, releaseName);
     }
 
     private void thenDeployStatusIs(String releaseName, DeployStatus.Status status) {
@@ -41,7 +39,7 @@ public class PrepareNewDeployTest {
         assertEquals(status, deploy.status());
     }
 
-    private void givenProject(UUID projectId, String environmentName, String releaseName) {
+    private void givenProject(String projectId, String environmentName, String releaseName) {
         givenEnvironment(projectId, environmentName, new Version(releaseName));
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
@@ -52,9 +50,9 @@ public class PrepareNewDeployTest {
         projectRepository.save(project);
     }
 
-    private Environment givenEnvironment(UUID projectId, String name, Version version) {
-        environment = Environment.create(projectId.toString(), name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
-        environment.tagRelease(version);
+    private Environment givenEnvironment(String projectId, String name, Version version) {
+        environment = Environment.create(name);
+        environment.release(version);
         environment.release(version);
 
         return environment;

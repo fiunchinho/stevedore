@@ -139,9 +139,6 @@ public class EsEventStore implements EventStore{
                 } else if (event.data().eventType().equals("stevedore.events.EnvironmentWasCreated")) {
                     System.out.println("REPLAYEANDO ADDING ENVIRONMENEENTNENN");
                     events.addAll(Arrays.asList(serializer.fromJson(msg, EnvironmentWasCreated.class)));
-                } else if (event.data().eventType().equals("stevedore.events.ReleaseWasTagged")) {
-                    System.out.println("REPLAYEANDO TAGGING RELEASE");
-                    events.addAll(Arrays.asList(serializer.fromJson(msg, ReleaseWasTagged.class)));
                 } else if (event.data().eventType().equals("stevedore.events.ReleaseWasPushed")) {
                     System.out.println("REPLAYEANDO PUSHING RELEASE");
                     events.addAll(Arrays.asList(serializer.fromJson(msg, ReleaseWasPushed.class)));

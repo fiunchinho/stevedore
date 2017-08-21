@@ -16,7 +16,7 @@ public class EventSourcingEnvironmentRepository implements EnvironmentRepository
 
     @Override
     public void save(Environment environment) {
-        eventStore.add(environment.id(), environment.recordedEvents());
+        eventStore.add(environment.name(), environment.recordedEvents());
     }
 
     @Override

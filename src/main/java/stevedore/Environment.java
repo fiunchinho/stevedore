@@ -6,94 +6,70 @@ import stevedore.messagebus.Message;
 import java.util.*;
 
 public class Environment {
-    private String id;
-    private String projectId;
-    private Integer version = 0;
+    /**
+     * Name of the environment. Must be unique within the project.
+     */
     private String name;
+
+    /**
+     * Auto-increment version for every event applied.
+     */
+    private Integer version = 0;
+
+    /**
+     * Current release in this environment.
+     */
     private Release currentRelease = null;
-    private String region;
-    private String vpcId;
-    private String keypair;
-    private AwsIdentity awsIdentity;
-    private ArrayList<Release> releases = new ArrayList();
-    private TreeMap<String, Deploy> deploys = new TreeMap();
-    private HashMap<String, String> options = new HashMap();
-    private List<Message> recordedEvents = new ArrayList();
+
+    /**
+     * Releases available in this environment.
+     */
+    private List<Release> releases = new ArrayList<>();
+
+    /**
+     * Deployments made to this environment.
+     */
+    private TreeMap<String, Deploy> deploys = new TreeMap<>();
+
+    /**
+     * Configuration for this environment.
+     */
+    private HashMap<String, String> options = new HashMap<>();
+
+    /**
+     * Events related to this project.
+     */
+    private List<Message> recordedEvents = new ArrayList<>();
 
     public Environment() {
     }
 
-    public Environment(String environmentId, String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
-        this.id = environmentId;
-        this.projectId = projectId;
+    public Environment(String environmentName) {
         this.name = environmentName;
-        this.region = region;
-        this.vpcId = vpcId;
-        this.keypair = keypair;
-        this.awsIdentity = awsIdentity;
     }
 
-    public static Environment create(String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+    public static Environment create(String environmentName) {
         Environment environment = new Environment();
-        Message event = new EnvironmentWasCreated(projectId, UUID.randomUUID().toString(), environmentName, region, vpcId, keypair, awsIdentity.accessKey(), awsIdentity.secretKey());
+        Message event = new EnvironmentWasCreated(environmentName);
         environment.apply(event);
         environment.recordedEvents.add(event);
 
         return environment;
     }
-
-    /**
-     * Idempotent factory method.
-     *
-     * @param environmentId
-     * @param projectId
-     * @param environmentName
-     * @param region
-     * @param vpcId
-     * @param keypair
-     * @param awsIdentity
-     * @return
-     */
-    public static Environment create(String environmentId, String projectId, String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
-        Environment environment = new Environment();
-        Message event = new EnvironmentWasCreated(projectId, environmentId, environmentName, region, vpcId, keypair, awsIdentity.accessKey(), awsIdentity.secretKey());
-        environment.apply(event);
-        environment.recordedEvents.add(event);
-
-        return environment;
-    }
-
-    public String id() { return id; }
 
     public String name() {
         return name;
     }
 
-    public String region() {
-        return region;
-    }
-
-    public String vpcId() {
-        return vpcId;
-    }
-
-    public String keypair() {
-        return keypair;
-    }
-
-    public AwsIdentity awsIdentity() {
-        return awsIdentity;
-    }
-
-    public HashMap<String, String> options() {
-        return options;
+    public Integer version() {
+        return version;
     }
 
     public Release currentRelease() {
         return currentRelease;
     }
 
-    public ArrayList<Release> releases() {
+    public List<Release> releases() {
         return releases;
     }
 
@@ -115,14 +91,8 @@ public class Environment {
         return deploys;
     }
 
-    public void tagRelease(Version version) {
-        ReleaseWasTagged event = new ReleaseWasTagged(this.id, version.version());
-        apply(event);
-        recordedEvents.add(event);
-    }
-
     public void release(Version version) {
-        ReleaseWasPushed event = new ReleaseWasPushed(this.id, version.version());
+        ReleaseWasPushed event = new ReleaseWasPushed(this.name, version.version());
         apply(event);
         recordedEvents.add(event);
     }
@@ -136,13 +106,13 @@ public class Environment {
     }
 
     public void startDeploy(Version versionToDeploy) throws ReleaseNotFoundException {
-        DeployWasStarted event = new DeployWasStarted(this.id, versionToDeploy.version());
+        DeployWasStarted event = new DeployWasStarted(this.name, versionToDeploy.version());
         apply(event);
         recordedEvents.add(event);
     }
 
     public void deploy(Version versionToDeploy) {
-        DeployWasMade event = new DeployWasMade(this.id, versionToDeploy.version());
+        DeployWasMade event = new DeployWasMade(this.name, versionToDeploy.version());
         apply(event);
         recordedEvents.add(event);
     }
@@ -158,8 +128,6 @@ public class Environment {
     public void apply(Message event) {
         if(event instanceof EnvironmentWasCreated){
             applyEnvironmentWasCreated((EnvironmentWasCreated) event);
-        } else if(event instanceof ReleaseWasTagged){
-            applyReleaseWasTagged((ReleaseWasTagged) event);
         } else if(event instanceof ReleaseWasPushed){
             applyReleaseWasPushed((ReleaseWasPushed) event);
         } else if(event instanceof DeployWasStarted){
@@ -171,36 +139,23 @@ public class Environment {
     }
 
     private void applyEnvironmentWasCreated(EnvironmentWasCreated event) {
-        id = event.data().get("environmentId");
-        projectId = event.data().get("projectId");
         name = event.data().get("environmentName");
-        region = event.data().get("region");
-        vpcId = event.data().get("vpcId");
-        keypair = event.data().get("keypair");
-        awsIdentity = new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey"));
-    }
-
-    private void applyReleaseWasTagged(ReleaseWasTagged event) {
-        releases.add(new Release(new Version(event.data().get("version"))));
-//        releases.put(event.data().get("version"), new Release(new Version(event.data().get("version"))));
     }
 
     private void applyReleaseWasPushed(ReleaseWasPushed event) {
-        Release release = findRelease(new Version(event.data().get("version")))
-                .orElseThrow(() -> new ReleaseNotFoundException());
-        release.setStatus(ReleaseStatus.ready());
+        releases.add(new Release(new Version(event.data().get("version"))));
     }
 
     private void applyDeployWasStarted(DeployWasStarted event) {
         Release release = getRelease(event.data().get("version"))
-                .orElseThrow(() -> new ReleaseNotFoundException());
+                .orElseThrow(ReleaseNotFoundException::new);
 
         deploys.put(event.data().get("version"), new Deploy(release));
     }
 
     private void applyDeployWasMade(DeployWasMade event) {
         Deploy deploy = findDeploy(event.data().get("version"))
-                .orElseThrow(() -> new DeployNotFoundException());
+                .orElseThrow(DeployNotFoundException::new);
         currentRelease = deploy.release();
         deploy.setStatus(DeployStatus.Status.SUCCESSFUL);
     }
@@ -222,10 +177,6 @@ public class Environment {
     public HashMap<String, Object> toHashMap() {
         HashMap<String, Object> environment = new HashMap<>();
         environment.put("name", name);
-        environment.put("region", region);
-        environment.put("vpcId", vpcId);
-        environment.put("keypair", keypair);
-        environment.put("awsIdentity", awsIdentity);
         options.entrySet().forEach(option -> environment.put(option.getKey(), option.getValue()));
 
         return environment;

@@ -18,10 +18,9 @@ public class DeleteProject {
     public void delete(String projectId) throws ProjectNotFoundException, ConnectionException {
         Project project = projectRepository
                 .load(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException());
+                .orElseThrow(ProjectNotFoundException::new);
 
         project.delete();
-
         project.recordedEvents().forEach(messageBus::publish);
     }
 }

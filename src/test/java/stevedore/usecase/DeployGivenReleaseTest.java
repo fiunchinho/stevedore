@@ -8,11 +8,8 @@ import stevedore.events.DeployWasMade;
 import stevedore.infrastructure.ConnectionException;
 import stevedore.infrastructure.InMemoryProjectRepository;
 
-import java.util.UUID;
-
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 public class DeployGivenReleaseTest {
@@ -27,7 +24,7 @@ public class DeployGivenReleaseTest {
 
     @Test(expected = DeployNotFoundException.class)
     public void ItFailsDeployingReleaseThatNotExists() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
 
         givenEnvironment(projectId, environmentName);
@@ -38,7 +35,7 @@ public class DeployGivenReleaseTest {
 
     @Test
     public void ItDeploysSpecificRelease() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
 
         givenEnvironment(projectId, environmentName);
@@ -57,7 +54,7 @@ public class DeployGivenReleaseTest {
 
     @Test
     public void ItDeploysLatestRelease() throws DeployNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
 
         givenEnvironment(projectId, environmentName);
@@ -74,7 +71,7 @@ public class DeployGivenReleaseTest {
 
     @Test
     public void ItRollsBackToPreviousRelease() throws ReleaseNotFoundException, ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
 
         givenEnvironment(projectId, environmentName);
@@ -99,27 +96,27 @@ public class DeployGivenReleaseTest {
 
     @Test(expected = ProjectNotFoundException.class)
     public void itFailsTryingToDeployNonExistingProject() throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
-        UUID projectId = UUID.randomUUID();
+        String projectId = "somevendor/some-project";
         String environmentName = "prod";
 
         whenDeploying(projectId, environmentName, "1.0");
     }
 
     private void whenReleaseIsTagged(Version version) {
-        environment.tagRelease(version);
+        environment.release(version);
     }
 
     private void whenReleaseIsPushed(Version version) {
-        environment.tagRelease(version);
+        environment.release(version);
     }
 
     private void whenDeployIsStarted(Version version) {
         environment.startDeploy(version);
     }
 
-    private void whenDeploying(UUID projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
+    private void whenDeploying(String projectId, String environmentName, String releaseName) throws ProjectNotFoundException, ConnectionException, EnvironmentNotFoundException {
         DeployGivenRelease useCase = new DeployGivenRelease(projectRepository, messageBus);
-        useCase.deploy(projectId.toString(), environmentName, releaseName);
+        useCase.deploy(projectId, environmentName, releaseName);
     }
 
     @Before
@@ -129,7 +126,7 @@ public class DeployGivenReleaseTest {
         environment = null;
     }
 
-    private void givenProject(UUID projectId) {
+    private void givenProject(String projectId) {
         ProjectBuilder buildProject = new ProjectBuilder();
         Project project = buildProject
                 .withId(projectId)
@@ -139,14 +136,9 @@ public class DeployGivenReleaseTest {
         projectRepository.save(project);
     }
 
-    private Environment givenEnvironment(UUID projectId, String name) {
-        environment = Environment.create(projectId.toString(), name, "eu-west-1", "vpc-123abc", "keys", getIrrelevantAwsIdentity());
+    private Environment givenEnvironment(String projectId, String name) {
+        environment = Environment.create(name);
 
         return environment;
     }
-
-    private AwsIdentity getIrrelevantAwsIdentity() {
-        return new AwsIdentity("access", "secret");
-    }
-
 }

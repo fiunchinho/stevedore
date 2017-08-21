@@ -16,12 +16,11 @@ public class CreateEnvironmentInProject {
     public void create(String projectId, String environmentName, String region, String vpcId, String keypair, String accessKey, String secretKey) throws ProjectNotFoundException, ConnectionException {
         Project project = projectRepository
                 .load(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException());
+                .orElseThrow(ProjectNotFoundException::new);
 
         project.addEnvironment(environmentName, region, vpcId, keypair, new AwsIdentity(accessKey, secretKey));
         projectRepository.save(project);
 
-        project.recordedEvents().forEach(System.out::println);
         project.recordedEvents().forEach(messageBus::post);
     }
 

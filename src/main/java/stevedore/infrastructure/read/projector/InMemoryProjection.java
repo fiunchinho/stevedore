@@ -23,11 +23,6 @@ public class InMemoryProjection {
     }
 
     @Handler
-    public void handle(ReleaseWasTagged message) {
-//        projectRepository.save(message.project);
-    }
-
-    @Handler
     public void handle(ReleaseWasPushed message) {
 //        projectRepository.save(message.project);
     }

@@ -1,41 +1,23 @@
 package stevedore.infrastructure.read.projector;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.Subscribe;
 import com.google.inject.Inject;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
 import net.engio.mbassy.listener.Handler;
 import net.engio.mbassy.listener.Invoke;
-import org.bson.Document;
-import org.bson.codecs.configuration.CodecRegistries;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.conversions.Bson;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.query.Query;
-import org.mongodb.morphia.query.UpdateOperations;
-import org.mongodb.morphia.query.UpdateResults;
 import stevedore.events.EnvironmentWasCreated;
 import stevedore.events.ProjectWasCreated;
-import stevedore.events.ReleaseWasTagged;
+import stevedore.events.ReleaseWasPushed;
 import stevedore.infrastructure.read.*;
-import stevedore.messagebus.Message;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Optional;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.FIELD;
-import static com.mongodb.client.model.Filters.eq;
 
 public class MongoProjection {
 
-//    private final MongoClient client;
     private final Datastore datastore;
     private final ObjectMapper mapper;
     private final ProjectDao projectDao;
@@ -82,7 +64,7 @@ public class MongoProjection {
 
     @Handler(delivery = Invoke.Synchronously)
     @Subscribe
-    public void handleReleaseWasTagged(ReleaseWasTagged message) {
+    public void handleReleaseWasPushed(ReleaseWasPushed message) {
         try {
             System.out.println("PROYECTANDO LA RELEEEASE EN EL PROJECT: " + message.data().get("projectId") + " Y EL ENV: " + message.data().get("environmentId"));
 //            Project project = datastore

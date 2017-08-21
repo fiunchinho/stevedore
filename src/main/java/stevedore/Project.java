@@ -8,29 +8,31 @@ import stevedore.messagebus.Message;
 import java.util.*;
 
 public class Project {
+    /**
+     * Id of the project, composed by vendor and project name from Github.
+     */
     private String id;
-    private Integer version = 0;
-    private String name;
-    private String repository;
-    private ArrayList<Environment> environments = new ArrayList();
-    private List<Message> recordedEvents = new ArrayList<>();
-    private String vendor;
 
-    public Project() {
-    }
+    /**
+     * Auto-increment version for every event applied.
+     */
+    private Integer version = 0;
+
+    /**
+     * Environments for this project.
+     */
+    private ArrayList<Environment> environments = new ArrayList();
+
+    /**
+     * Events related to this project.
+     */
+    private List<Message> recordedEvents = new ArrayList<>();
+
+    public Project() {}
 
     public static Project create(String projectRepository) {
         Project project = new Project();
-        Message event = new ProjectWasCreated(UUID.randomUUID().toString(), projectRepository);
-        project.apply(event);
-        project.recordedEvents.add(event);
-
-        return project;
-    }
-
-    public static Project create(UUID projectId, String projectRepository) {
-        Project project = new Project();
-        Message event = new ProjectWasCreated(projectId.toString(), projectRepository);
+        Message event = new ProjectWasCreated(projectRepository);
         project.apply(event);
         project.recordedEvents.add(event);
 
@@ -42,26 +44,33 @@ public class Project {
     }
 
     public String name() {
-        return name;
+        return extractProjectNameFrom(id);
     }
 
-    public String repository() {
-        return repository;
+    public String vendor() {
+        return extractVendorNameFrom(id);
+    }
+
+    public Integer version() {
+        return version;
     }
 
     public ArrayList getEnvironments() {
         return environments;
     }
 
-    public void addEnvironment(String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
-        Message event = new EnvironmentWasCreated(id, UUID.randomUUID().toString(), environmentName, region, vpcId, keypair, awsIdentity.accessKey(), awsIdentity.secretKey());
-        apply(event);
-        recordedEvents.add(event);
+    public List<Message> recordedEvents() {
+        return recordedEvents;
     }
 
     public void addEnvironment(Environment environment) {
         environments.add(environment);
-//        environments.put(environment.name(), environment);
+    }
+
+    public void addEnvironment(String environmentName, String region, String vpcId, String keypair, AwsIdentity awsIdentity) {
+        Message event = new EnvironmentWasCreated(environmentName);
+        apply(event);
+        recordedEvents.add(event);
     }
 
     public Optional<Environment> getEnvironment(String environmentName) {
@@ -90,23 +99,20 @@ public class Project {
     }
 
     public void applyProjectWasCreated(ProjectWasCreated event) {
-        id = event.data().get("projectId");
-        repository = event.data().get("repository");
-        name = extractProjectNameFrom(event.data().get("repository"));
-        vendor = extractVendorNameFrom(event.data().get("repository"));
+        id = event.data().get("repository");
     }
 
     public void applyEnvironmentWasCreated(EnvironmentWasCreated event) {
-//        Environment environment = Environment.create(event.data().get("environmentId"), event.data().get("projectId"), event.data().get("environmentName"), event.data().get("region"), event.data().get("vpcId"), event.data().get("keypair"), new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey")));
-        Environment environment = new Environment(event.data().get("environmentId"), id, event.data().get("environmentName"), event.data().get("region"), event.data().get("vpcId"), event.data().get("keypair"), new AwsIdentity(event.data().get("accessKey"), event.data().get("secretKey")));
-        addEnvironment(environment);
-//        environments.put(event.data().get("environmentName"), environment);
+        addEnvironment(
+            new Environment(event.data().get("environmentName"))
+        );
     }
 
     public HashMap<String, Object> toHashMap() {
         HashMap<String, Object> project = new HashMap<>();
-        project.put("name", name);
-        project.put("repository", repository);
+        project.put("id", id);
+        project.put("vendor", vendor());
+        project.put("name", name());
 
         return project;
     }
@@ -117,9 +123,5 @@ public class Project {
 
     private String extractVendorNameFrom(String repository) {
         return repository.split("/")[0];
-    }
-
-    public List<Message> recordedEvents() {
-        return recordedEvents;
     }
 }
